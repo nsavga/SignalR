@@ -15,7 +15,7 @@
     signalR.transports.longPolling = {
         name: "longPolling",
 
-        supportsKeepAlive: false,
+        supportsKeepAlive: true,
 
         reconnectDelay: 3000,
 
@@ -83,7 +83,10 @@
                     connection.log("Opening long polling request to '" + url + "'.");
                     instance.pollXhr = $.ajax(
                         $.extend({}, $.signalR.ajaxDefaults, {
-                            xhrFields: { withCredentials: connection.withCredentials },
+                            xhrFields: {
+                                withCredentials: connection.withCredentials,
+                                onprogress: $.proxy(transportLogic.markLastMessage, null, connection)
+                            },
                             url: url,
                             type: "GET",
                             dataType: connection.ajaxDataType,
@@ -101,6 +104,8 @@
                                 reconnectErrors = 0;
 
                                 try {
+                                    // Remove any keep-alives from the beginning of the result
+                                    result = result.replace(/^(\{\})*/, "");
                                     minData = connection._parseResponse(result);
                                 }
                                 catch (error) {
